@@ -1,12 +1,13 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 const http = require('http');
 const socketIo = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const OrdersHistory = require('./models/OrderHistory');
-const OrderHistory = require('./models/OrderHistory');
 
 const app = express();
 const port = 3000;
@@ -15,12 +16,36 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(authRoutes);
 
-mongoose.connect('mongodb://0.0.0.0:27017/chatApp', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+app.use(express.static(path.join(__dirname, './build')));
+
+const {NODE_ENV, DB_HOST, DB_NAME, DB_USER, DB_PASSWORD} = process.env
+// console.log(process.env)
+console.log(NODE_ENV,DB_USER,DB_HOST,DB_NAME,DB_PASSWORD)
+const connectionStr = NODE_ENV === 'production' ? `mongodb://${DB_HOST}/${DB_NAME}` : `mongodb+srv://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/?retryWrites=true&w=majority`
+// mongodb+srv://TransMessageHub:<password>@cluster0.wxaftsp.mongodb.net/?retryWrites=true&w=majority
+console.log(connectionStr);
+mongoose.connect(connectionStr)
+
+mongoose.connection.on('error', error => {
+    console.error(`could not connect to database, error = `, error.message)
+    process.exit(1);
 })
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log('Error connecting to MongoDB:', err));
+
+mongoose.connection.on('open', function () {
+    console.error(`successfully connected to database`)
+    // console.log(process.env);
+})
+
+app.use('*', function (req, res) {
+  res.sendFile(path.join(__dirname, "./build/index.html"));
+});
+
+// mongoose.connect('mongodb://0.0.0.0:27017/chatApp', {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true,
+// })
+//     .then(() => console.log('MongoDB connected'))
+//     .catch(err => console.log('Error connecting to MongoDB:', err));
 
 const server = http.createServer(app);
 
