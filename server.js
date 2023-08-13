@@ -58,13 +58,27 @@ io.on('connection', (socket) => {
     manufacturerSockets.set(email, socket.id);
   });
 
-  socket.on('sendReply', (data) => {
+  socket.on('joinTransporter', (email) => {
+    manufacturerSockets.set(email, socket.id);
+  });
+
+  socket.on('sendReplyToManufacturer', (data) => {
     // console.log("data", data);
     const manufacturerSocketId = manufacturerSockets.get(data.manufacturer);
     console.log("manufacturerSocketId", manufacturerSocketId);
 
     if (manufacturerSocketId) {
-      io.to(manufacturerSocketId).emit('receiveReply', data);
+      io.to(manufacturerSocketId).emit('receiveReplyFromTransporter', data);
+    }
+  });
+
+  socket.on('sendOrderToTransporter', (data) => {
+    console.log("data", data);
+    const transporterSocketId = manufacturerSockets.get(data.transporter);
+    console.log("transporterSocketId", transporterSocketId);
+
+    if (transporterSocketId) {
+      io.to(transporterSocketId).emit('receiveReplyFromManufacturer', data);
     }
   });
 
